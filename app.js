@@ -41,7 +41,7 @@ const fs = require('fs');
   // get post for post page
 
   var file = fs.createWriteStream('medium_posts.csv', {flags: 'a+'});
-  file.write('id,title,author_name,texts,keywords\n')
+  file.write('id,title,author_name,texts,keywords,created_at\n')
   for(var i = 0, l = post_info_array.length; i < l; i++){
     url = post_info_array[i].url;
     await page.goto(url, {waitUntil: 'networkidle2'});
@@ -53,12 +53,13 @@ const fs = require('fs');
     title = info_json.name;
     author_name = info_json.author.name;
     keywords = info_json.keywords.join('|')
+    created_at = info_json.dateCreated
     texts = await page.$$eval('article p', nodes => nodes.map(element => {
       return element.innerText;
     }))
     text = texts.join(' ');
 
-    file.write(id + ',†' + title + '†,' + author_name + ',†' + text + '†,' + keywords + '\n');
+    file.write(id + ',†' + title + '†,' + author_name + ',†' + text + '†,' + keywords + ',' + created_at + '\n');
   }
 
   file.end();
