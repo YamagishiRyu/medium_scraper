@@ -26,5 +26,17 @@ const puppeteer = require('puppeteer');
     );
   console.log('scrolled')
 
+  // get post information
+  const post_selector = '#root > div > section > section.y.cs.ab.n > div:nth-child(3) > div.ez.fa.n > section'
+  posts = page.$$eval(post_selector, nodes => nodes.map(element => {
+    return {
+      title: element.querySelector('h3').innerText,
+      url: element.querySelector('h3 a').href
+    }
+  }));
+
+  console.log(await posts)
+
+
   await browser.close();
 })();
