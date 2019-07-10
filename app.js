@@ -1,4 +1,5 @@
 const puppeteer = require('puppeteer');
+require('dotenv').config();
 const fs = require('fs');
 
 (async () => {
@@ -8,10 +9,12 @@ const fs = require('fs');
         '--disable-setuid-sandbox'
       ],
       headless: false,
-      slowMo: 50
+      slowMo: 5
     });
   const page = await browser.newPage();
   await page.setViewport({ width: 1366, height: 2000 });
+
+  // to medium
   await page.goto('https://medium.com/topic/popular');
   await page._client.send(
       'Input.synthesizeScrollGesture',
@@ -19,16 +22,16 @@ const fs = require('fs');
         x: 0,
         y: 0,
         xDistance: 0,
-        yDistance: -3500,
+        yDistance: -5500,
         speed: 2000,
-        repeatCount: 5,
-        repeatDelayMs: 200
+        repeatCount: 10,
+        repeatDelayMs: 2000
       }
     );
   console.log('scrolled');
 
   // get url information
-  const post_selector = '#root > div > section > section.y.cs.ab.n > div:nth-child(3) > div > section'
+  const post_selector = '#root > div > section > section > div:nth-child(3) > div > section'
   post_info_array = await page.$$eval(post_selector, nodes => nodes.map(element => {
     return {
       title: element.querySelector('h3').innerText,
@@ -46,7 +49,18 @@ const fs = require('fs');
     url = post_info_array[i].url;
     await page.goto(url, {waitUntil: 'networkidle2'});
     await page.waitFor(1000);
-    await page.mouse.click(10,10);
+    await page.mouse.click(100,100);
+    await page.waitFor(1000);
+
+    process.stdout.write(post_info_array[i].title);
+    try {
+      is_read_lot = await page.$eval('a[href*="connect/google"]', el => el.innerText);
+      console.log(" ==> Missed");
+      continue;
+    }catch(e){
+      //console.log(e);
+      process.stdout.write(" ===> OK");
+    }
     
     info_json = await page.$eval('head > script[type="application/ld+json"]', el => JSON.parse(el.innerText));
     id = info_json.articleId;
@@ -55,11 +69,13 @@ const fs = require('fs');
     keywords = info_json.keywords.join('|')
     created_at = info_json.dateCreated
     texts = await page.$$eval('article p', nodes => nodes.map(element => {
-      return element.innerText;
+      return element.innerText.replace('\n', ' ');
     }))
-    text = texts.join(' ');
+    text = texts.join(' ').replace('\n', ' ');
 
     file.write(id + ',†' + title + '†,' + author_name + ',†' + text + '†,' + keywords + ',' + created_at + '\n');
+    console.log(" ----> Done");
+    await page.waitFor(1000);
   }
 
   file.end();
